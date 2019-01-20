@@ -9,10 +9,13 @@ version: 0.3
 /*
 Here we start to develop some useful google api code.
 
--- Dils api spread sheet link for TSV
--- https://docs.google.com/spreadsheets/d/e/2PACX-1vQYAADTZqrwiO5XdvCcbw4cwkSiCKJreFBh4IDHxOgemWiEXOuTZQEp_cpeRVvg0aWh6w9gSItYHBpT/pub?output=tsv
--- has a browser view at:
--- https://docs.google.com/spreadsheets/d/1rVxI-d2D_6J7yEh50x5fTceZs_szddYqL_hdcAEHvoM/edit#gid=
+Dils api spread sheet link for TSV:
+
+- https://docs.google.com/spreadsheets/d/e/2PACX-1vQYAADTZqrwiO5XdvCcbw4cwkSiCKJreFBh4IDHxOgemWiEXOuTZQEp_cpeRVvg0aWh6w9gSItYHBpT/pub?output=tsv
+
+Has a browser view at:
+
+- https://docs.google.com/spreadsheets/d/1rVxI-d2D_6J7yEh50x5fTceZs_szddYqL_hdcAEHvoM/edit#gid=
 */
 
 constant cYoutubeModelShortFile = "youtube_Authentication.array"
@@ -38,26 +41,6 @@ function google_ConstructFedwikiImagePageArray googleURL
 end google_ConstructFedwikiImagePageArray
 
 command google_DeconstructImageUrl someTextURL, @imageURL, @refURL, @searchTerms, @w, @h
-   /*
-   https://www.google.com/imgres
-   
-   ?imgurl=https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Plos_One_e93627_Fig_10_Gerontoformica_species_mesosoma_profile_view_A.png
-   /640px-Plos_One_e93627_Fig_10_Gerontoformica_species_mesosoma_profile_view_A.png
-   &imgrefurl=https://commons.wikimedia.org/wiki/File:Plos_One_e93627_Fig_10_Gerontoformica_species_mesosoma_profile_view_A.png
-   
-   &docid=d7uh9NpfCCoFOM&tbnid=f6B63D8pySHydM:
-   &vet=10ahUKEwjzsei4u6ndAhWFyKQKHSA3BEYQMwgrKAMwAw..i
-   &w=640
-   &h=234
-   &safe=images
-   &bih=689
-   &biw=1254
-   &as_q=Ant Mesosoma
-   &ved=0ahUKEwjzsei4u6ndAhWFyKQKHSA3BEYQMwgrKAMwAw
-   &iact=mrc
-   &uact=8 
-   */
-   
    put urldecode (someTextURL) into someURL
    set the itemdelimiter to "?"
    delete item 1 of someURL
