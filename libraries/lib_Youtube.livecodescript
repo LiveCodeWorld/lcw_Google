@@ -10,7 +10,20 @@ deps: lib_Fedwiki
 
 /*
 A library for XML and XML related data structures.
+
+function fortyFoxes_YoutubeUploadsPlayListID
+   return "UU7OedLDWblLWl_UDm5JJDQg"
+   -- put fortyFoxes_YoutubeChannelID() into channelID
+   -- put youtube_FetchChannelUploadsPlayListID (channelID) into uploadsPlaylistID
+   -- return uploadsPlaylistID
+end fortyFoxes_YoutubeUploadsPlayListID
+
+function fortyFoxes_YoutubeChannelID
+   return "UC7OedLDWblLWl_UDm5JJDQg"
+   -- return youtube_FetchUserChannelID ("fortyfoxes")
+end fortyFoxes_YoutubeChannelID
 */
+
 
 --> Variables
 -
@@ -20,22 +33,147 @@ constant cYoutubeApiStem = "https://www.googleapis.com/youtube/v3/"
 local YoutubeServerApiKey
 local YoutubeDesktopApiKey
 
+constant cVimeoModelShortFile = "vimeo_Authentication.array"
+local VimeoApiKey
+local VimeoClientID
+local VimeoClientSecret
 
---> Youtube | Fortyfoxes
+
+--> TED
 -
-function fortyFoxes_YoutubeUploadsPlayListID
-   return "UU7OedLDWblLWl_UDm5JJDQg"
-   /*
-   put fortyFoxes_YoutubeChannelID() into channelID
-   put youtube_FetchChannelUploadsPlayListID (channelID) into uploadsPlaylistID
-   return uploadsPlaylistID
-   */
-end fortyFoxes_YoutubeUploadsPlayListID
+function ted_ConstructPageArray tedID
+   put "https://www.ted.com/talks/" & tedID into tedURL
+   --
+   put html_FetchTidy (tedURL) into someHTML
+   put scrape_HeaderSection (someHTML) into metaArray
+   fedwiki_ParseMetaArray metaArray, htmlTitle, pageDescription, imageURL, articleTitle
+   put the result into shortDescription
+   --
+   put articleTitle & "." && pageDescription into videoDescription
+   --
+   put fedwiki_ConstructPageArray (articleTitle, shortDescription) into fedwikiPageArray
+   fedwiki_AddVideoToPageArray fedwikiPageArray, tedID, "TED", videoDescription
+   --
+   fedwiki_StripJournalToCreate fedwikiPageArray
+   return fedwikiPageArray
+end ted_ConstructPageArray
 
-function fortyFoxes_YoutubeChannelID
-   return "UC7OedLDWblLWl_UDm5JJDQg"
-   -- return youtube_FetchUserChannelID ("fortyfoxes")
-end fortyFoxes_YoutubeChannelID
+
+--> Vimeo
+-
+function vimeo_ConstructPageArray vimeoID
+   put vimeo_FetchVideoJSON (vimeoID) into someJSON
+   put json_ToArray (someJSON) into vimeoArray
+   --
+   put vimeoArray ["name"] into vimeoTitle
+   put vimeoArray ["description"] into vimeoDescription
+   put vimeoArray ["link"] into vimeoURL
+   --
+   put vimeoTitle & "." && vimeoDescription into videoDescription
+   --
+   put fedwiki_ConstructPageArray (vimeoTitle, vimeoDescription) into fedwikiPageArray
+   fedwiki_AddVideoToPageArray fedwikiPageArray, vimeoID, "VIMEO", videoDescription
+   --
+   return fedwikiPageArray
+end vimeo_ConstructPageArray
+
+function vimeo_FetchVideoJSON videoID
+   put "videos/" & videoID into apiBit
+   put vimeo_RestGET (apiBit) into someJSON
+   return someJSON
+end vimeo_FetchVideoJSON
+
+
+--> Vimeo | Authentication
+-
+function vimeo_GetUnauthenticatedToken
+   -- not working
+   -- https://developer.vimeo.com/api/authentication
+   put vimeo_GetClientID() into clientID
+   put vimeo_GetSecret() into clientSecret
+   put base64encode (clientID & ":" & clientSecret) into encodedBit
+   replace CR with empty in encodedBit
+   --
+   put "Authorization : basic" && encodedBit after authHeader
+   --
+   set the httpheaders to authHeader
+   -- 
+   get libURLFormData ("grant_type", "client_credentials", "scope", "public private")
+   post it to url "https://api.vimeo.com/oauth/authorize/client"
+   put it into postResult
+   return postResult
+end vimeo_GetUnauthenticatedToken
+
+command vimeo_SetAccessToken accessToken
+   user_SetValue "VimeoApiKey", cVimeoModelShortFile, accessToken
+   put the result into modelDataFile
+   return modelDataFile
+end vimeo_SetAccessToken
+
+function vimeo_GetAccessToken
+   if VimeoApiKey is empty then
+      if the environment = "server" then
+         put rigFetchConfigItem ("VimeoApiKey") into VimeoApiKey
+      else
+         put user_GetValue ("VimeoApiKey", cVimeoModelShortFile) into VimeoApiKey
+      end if
+   end if
+   return VimeoApiKey
+end vimeo_GetAccessToken
+
+function vimeo_GetClientID
+   if VimeoClientID is empty then
+      if the environment = "server" then
+         put rigFetchConfigItem ("VimeoClientID") into VimeoClientID
+      else
+         put user_GetValue ("VimeoClientID", cVimeoModelShortFile) into VimeoClientID
+      end if
+   end if
+   return VimeoClientID
+end vimeo_GetClientID
+
+command vimeo_SetClientID clientID
+   user_SetValue "VimeoClientID", cVimeoModelShortFile, clientID
+   put the result into modelDataFile
+   return modelDataFile
+end vimeo_SetClientID
+
+function vimeo_GetSecret
+   if VimeoClientSecret is empty then
+      if the environment = "server" then
+         put rigFetchConfigItem ("VimeoClientSecret") into VimeoClientSecret
+      else
+         put user_GetValue ("VimeoClientSecret", cVimeoModelShortFile) into VimeoClientSecret
+      end if
+   end if
+   return VimeoClientSecret
+end vimeo_GetSecret
+
+command vimeo_SetClientSecret clientSecret
+   user_SetValue "VimeoClientSecret", cVimeoModelShortFile, clientSecret
+   put the result into modelDataFile
+   return modelDataFile
+end vimeo_SetClientSecret
+
+
+--> Vimeo | REST
+-
+function vimeo_RestGET apiBit
+   vimeo_SetAuthentication
+   put "https://api.vimeo.com/" & apiBit into restURL
+   --
+   put url restURL into someJSON
+   return someJSON
+end vimeo_RestGET
+
+command vimeo_SetAuthentication
+   put "Accept: application/vnd.vimeo.*+json;version=3.4" into authHeader
+   --
+   put vimeo_GetAccessToken() into accessToken
+   put CR & "Authorization: Bearer" && accessToken after authHeader
+   --
+   set the httpheaders to authHeader
+end vimeo_SetAuthentication
 
 
 --> Youtube | REST
@@ -45,25 +183,32 @@ function youtube_ConstructWatchUrl videoID
    return youtubeURL
 end youtube_ConstructWatchUrl
 
-private function _FetchYoutubeJSON apiBit
-   put construct_YoutubeRestUrl (apiBit) into someUrl
-   put url someUrl into someJSON
-   return someJSON
-end _FetchYoutubeJSON
-
 
 --> Youtube | Authentication
 -
 function youTube_GetApiKey
-   switch the platform
+   switch the environment
       case "server"
          return youTube_GetServerApiKey()
-      case "iphone" -- iOS devices
-      case "android" -- Android devices
       default
          return youTube_GetDesktopApiKey()
    end switch
 end youTube_GetApiKey
+
+function youTube_GetServerApiKey
+   if YoutubeDesktopApiKey is empty then
+      -- put user_GetValue ("YoutubeServerApiKey", cYoutubeModelShortFile) into YoutubeServerApiKey
+      put rigFetchConfigItem ("YoutubeApiKey") into YoutubeServerApiKey
+   end if
+   return YoutubeServerApiKey
+end youTube_GetServerApiKey
+
+-- command youTube_SetServerApiKey pApiKey
+-- need to set manually in config.lc file on server
+user_SetValue "YoutubeServerApiKey", cYoutubeModelShortFile, pApiKey
+put the result into modelDataFile
+return modelDataFile
+end youTube_SetServerApiKey
 
 function youTube_GetDesktopApiKey
    if YoutubeDesktopApiKey is empty then
@@ -77,46 +222,6 @@ command youTube_SetDesktopApiKey pApiKey
    put the result into modelDataFile
    return modelDataFile
 end youTube_SetDesktopApiKey
-
-function youTube_GetServerApiKey
-   if YoutubeServerApiKey is empty then
-      put user_GetValue ("YoutubeServerApiKey", cYoutubeModelShortFile) into YoutubeServerApiKey
-   end if
-   return YoutubeServerApiKey
-end youTube_GetServerApiKey
-
-command youTube_SetServerApiKey pApiKey
-   user_SetValue "YoutubeServerApiKey", cYoutubeModelShortFile, pApiKey
-   put the result into modelDataFile
-   return modelDataFile
-end youTube_SetServerApiKey
-
-
---> Youtube | Parse
--
-/*
-This section makes more sense in the controller "youtube.lc" controller.
-The handlers are here tmporarily, to make it easy to graph and look for dependencies.
-*/
-
-function youtube_FetchNextPageJson droppedURL, droppedHtml
-   put fedwiki_FetchMetadataArray (droppedURL) into metadataArray
-   put metadataArray ["pageTitle"] into pageTitle
-   put metadataArray ["author"] into transporterName
-   put metadataArray ["nextPageToken"] into nextPageToken
-   
-   if nextPageToken is empty then
-      put "Not a link that I can parse:" && droppedURL & CR & CR & droppedHtml into someInfo
-      put fedwiki_ConstructErrorJSON (someInfo) into someJSON
-   else -- dropped a Fedwiki page which has a nextPageToken
-      put 10 into pMaxResults
-      put true into pDontLinkTitle
-      put wcn_GetChannelID() into channelID
-      
-      put youtube_FetchChannelUploadPageJson (channelID, pMaxResults, pDontLinkTitle, nextPageToken) into someJSON
-   end if
-   return someJSON
-end youtube_FetchNextPageJson
 
 
 --> Youtube | Playlist | Index
@@ -482,6 +587,12 @@ end youtube_FetchSearchJson
 
 --> Private
 -
+private function _FetchYoutubeJSON apiBit
+   put construct_YoutubeRestUrl (apiBit) into someUrl
+   put url someUrl into someJSON
+   return someJSON
+end _FetchYoutubeJSON
+
 private command set_PlayListPageTitle @pageTitle, playlistID
    if pageTitle is empty then
       put youtube_FetchPlayListInfoArray (playlistID) into infoArray
@@ -668,8 +779,8 @@ private command add_SnippetToThumbPageArray @pageArray, snippetArray, pVideoID
    put fedwiki_ConstructImageHtml (thumbNailURL, videoCaption, youtubeURL, "- youtube", thumbNailWidth) into imageHTML 
    fedwiki_AddHtmlToPageArray pageArray, imageHTML
    
-   -- put fedwiki_ConstructImageArray (someImage, imageType, plainCaption) into imageArray
-   -- fedwiki_PageArrayAddToEnd imageArray, pageArray
+   -- put fedwiki_ConstructEncodedImageArray (someImage, imageType, plainCaption) into imageArray
+   -- fedwiki_AddItemArrayToStoryEnd imageArray, pageArray
    return videoTitle
 end add_SnippetToThumbPageArray
 

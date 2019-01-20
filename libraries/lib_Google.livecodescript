@@ -4,7 +4,7 @@
 license: GPLv3
 name: lib_Google
 type: library
-version: 0.2
+version: 0.3
 
 /*
 Here we start to develop some useful google api code.
@@ -23,6 +23,96 @@ local YoutubeBrowserApiKey
 
 --> Working on
 -
+function google_ConstructFedwikiImagePageArray googleURL
+   google_DeconstructImageUrl googleURL, imageURL, refURL, searchTerms, w, h
+   put searchTerms into someCaption
+   --
+   put google_ConstructCreativeCommonsSearchUrl (searchTerms) into searchURL
+   put "The search query for this image was" && kwote (searchTerms) into someText
+   put ". Try another search on [" & searchURL && "google]" after someText
+   --
+   put fedwiki_ConstructNewPageArray ("Google found this image", someText) into fedwikiPageArray
+   fedwiki_AddImageToPageArray fedwikiPageArray, imageURL, someCaption, refURL
+   --
+   return fedwikiPageArray
+end google_ConstructFedwikiImagePageArray
+
+command google_DeconstructImageUrl someTextURL, @imageURL, @refURL, @searchTerms, @w, @h
+   /*
+   https://www.google.com/imgres
+   
+   ?imgurl=https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Plos_One_e93627_Fig_10_Gerontoformica_species_mesosoma_profile_view_A.png
+   /640px-Plos_One_e93627_Fig_10_Gerontoformica_species_mesosoma_profile_view_A.png
+   &imgrefurl=https://commons.wikimedia.org/wiki/File:Plos_One_e93627_Fig_10_Gerontoformica_species_mesosoma_profile_view_A.png
+   
+   &docid=d7uh9NpfCCoFOM&tbnid=f6B63D8pySHydM:
+   &vet=10ahUKEwjzsei4u6ndAhWFyKQKHSA3BEYQMwgrKAMwAw..i
+   &w=640
+   &h=234
+   &safe=images
+   &bih=689
+   &biw=1254
+   &as_q=Ant Mesosoma
+   &ved=0ahUKEwjzsei4u6ndAhWFyKQKHSA3BEYQMwgrKAMwAw
+   &iact=mrc
+   &uact=8 
+   */
+   
+   put urldecode (someTextURL) into someURL
+   set the itemdelimiter to "?"
+   delete item 1 of someURL
+   --
+   put someURL into someArray
+   split someArray with "&" and "="
+   put someArray ["imgurl"] into imageURL
+   put someArray ["imgrefurl"] into refURL
+   put someArray ["as_q"] into searchTerms
+   put someArray ["w"] into w
+   put someArray ["h"] into h
+   --
+   return true
+end google_DeconstructImageUrl
+
+
+--> Youtube | API
+-
+function translate_ToGerman someText
+   put urlencode (someText) into qText
+   put google_GetSimpleBrowserApiKey() into apiKey
+   
+   put "https://www.googleapis.com/language/translate/v2?q=" & qText into someURL
+   put "&target=de&source=en" after someURL
+   put "&key=" & apiKey after someURL
+   
+   put url someURL into someJson
+   return someJson
+end translate_ToGerman
+
+
+--> Google | Authentication
+-
+function google_GetSimpleBrowserApiKey 
+   if YoutubeBrowserApiKey is empty then
+      put user_GetValue ("YoutubeBrowserApiKey", cYoutubeModelShortFile) into YoutubeBrowserApiKey
+   end if
+   return YoutubeBrowserApiKey
+end google_GetSimpleBrowserApiKey
+
+command google_SetSimpleBrowserApiKey pApiKey
+   user_SetValue "YoutubeBrowserApiKey", cYoutubeModelShortFile, pApiKey
+   put the result into modelDataFile
+   return modelDataFile
+end google_SetSimpleBrowserApiKey
+
+
+--> Google
+-
+function google_ConstructCreativeCommonsSearchUrl searchWords
+   put urlencode (searchWords) into searchBit
+   get merge ("https://www.google.com/search?as_st=y&tbm=isch&as_q=[[searchBit]]&as_epq=&as_oq=&as_eq=&cr=&as_sitesearch=&safe=images&tbs=sur:fmc&gws_rd=ssl")
+   return it
+end google_ConstructCreativeCommonsSearchUrl
+
 
 --> Google | Sheets
 -
@@ -64,6 +154,9 @@ function gsheet_FetchJSON sheetKey
    return someJSON
 end gsheet_FetchJSON
 
+
+--> Deps
+-
 function curl_GetURL someURL, pShowHeaders
    -- https://stackoverflow.com/questions/866946/how-can-i-see-the-request-headers-made-by-curl-when-sending-a-request-to-the-ser
    put "curl" into someShell
@@ -74,34 +167,3 @@ function curl_GetURL someURL, pShowHeaders
    --
    return curlResult
 end curl_GetURL
-
-
---> Youtube | API
--
-function translate_ToGerman someText
-   put urlencode (someText) into qText
-   put google_GetSimpleBrowserApiKey() into apiKey
-   
-   put "https://www.googleapis.com/language/translate/v2?q=" & qText into someURL
-   put "&target=de&source=en" after someURL
-   put "&key=" & apiKey after someURL
-   
-   put url someURL into someJson
-   return someJson
-end translate_ToGerman
-
-
---> Google | Authentication
--
-function google_GetSimpleBrowserApiKey 
-   if YoutubeBrowserApiKey is empty then
-      put user_GetValue ("YoutubeBrowserApiKey", cYoutubeModelShortFile) into YoutubeBrowserApiKey
-   end if
-   return YoutubeBrowserApiKey
-end google_GetSimpleBrowserApiKey
-
-command google_SetSimpleBrowserApiKey pApiKey
-   user_SetValue "YoutubeBrowserApiKey", cYoutubeModelShortFile, pApiKey
-   put the result into modelDataFile
-   return modelDataFile
-end google_SetSimpleBrowserApiKey
