@@ -16,6 +16,18 @@ version: 0.1
 
 --> Global | Google | Menu
 -
+on menu_DisplayConsoleDomains
+   put cse_FetchConsoleDomains() into domainNames
+   --
+   display_Lines domainNames, "Registered Domains", "mDoubleUp_ConsoleDomain", "Google Search Console"
+   put the result into indexView
+   set the title_Menu of indexView to "Global | Google | Console | Title | Menu"
+   set the line_Menu of indexView to "Global | Google | Console | Title | Line | Menu"
+end menu_DisplayConsoleDomains
+
+on _
+end _
+
 on menu_TestSheet
    ## from David's share link (published)
    -- does not work (its HTML)
