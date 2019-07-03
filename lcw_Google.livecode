@@ -2,9 +2,15 @@
 --> MetaData
 -
 license: GPLv3
-name: projectName
+name: lcw_Google
 type: project
 version: 0.2
+
+/*
+This project is the beginning of an huge amount of work integrating Livecode with Google API's
+
+Most of the work has been done with sitemaps and the Google Search console.
+*/
 
 
 --> Deps

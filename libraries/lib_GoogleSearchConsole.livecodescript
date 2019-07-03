@@ -4,11 +4,39 @@
 license: GPLv3
 name: lib_GoogleSearchConsole
 type: library
-version: 0.1
+version: 0.2
+
+/*
+This library interfaces with Google Console API to allow registering of domains and sitemaps programaticly.
+*/
 
 
 --> Working on
 -
+function cse_FetchMissingSitemaps 
+   put cse_FetchConsoleDomains() into consoleDomains
+   repeat for each line consoleDomain in consoleDomains
+      put cse_ListSitemaps (consoleDomain) into siteMaps
+      if siteMaps is empty then
+         put consoleDomain & CR after missingSitemaps
+      end if
+   end repeat
+   delete char -1 of missingSitemaps
+   return missingSitemaps
+end cse_FetchMissingSitemaps
+
+function cse_FetchMissingDomains pFetchLive
+   put cse_FetchConsoleDomains() into consoleDomains
+   if pFetchLive is true then
+      put atopia_FetchFolders() into wikiDomains
+   else
+      put atopia_FetchRoster() into wikiDomains
+   end if
+   line_DeleteIndex wikiDomains, consoleDomains
+   url_SortDomainIndex wikiDomains
+   return wikiDomains
+end cse_FetchMissingDomains
+
 command cse_AddTopDomain topDomain
    cse_AddAllSubDomains topDomain
    put the result & CR & CR after bigResult
@@ -21,7 +49,7 @@ end cse_AddTopDomain
 --> CSE | Console | Sitemap
 -
 command cse_AddSubDomainSitemaps topDomain
-   put atopia_FetchStoredDomains (topDomain) into wikiDomains
+   put atopia_FetchRoster (topDomain) into wikiDomains
    cse_AddDomainSitemaps wikiDomains
    return the result
 end cse_AddSubDomainSitemaps
@@ -65,12 +93,11 @@ command cse_AddFedwikiSitemap siteURL
    return someResult
 end cse_AddFedwikiSitemap
 
-function cse_ListSitemaps siteURL
+function cse_ListSitemaps consoleDomain
+   put "http://" & consoleDomain into siteURL
+   --
    put cse_FetchSitemapsArray (siteURL) into sitemapsArray
    put sitemapsArray ["sitemap"] into sitemapArray
-   --
-   -- display_Array sitemapArray
-   --
    repeat for each key indexNum in sitemapArray
       put sitemapArray [indexNum]["path"] into sitemapPath
       put sitemapPath & CR after sitemapPaths
@@ -92,7 +119,7 @@ end cse_FetchSitemapsArray
 --> CSE | Console | Site
 -
 command cse_AddAllSubDomains topDomain
-   put atopia_FetchStoredDomains (topDomain) into wikiDomains
+   put atopia_FetchRoster (topDomain) into wikiDomains
    cse_AddDomains wikiDomains
    return the result
 end cse_AddAllSubDomains
@@ -227,7 +254,7 @@ function cse_GetConsoleAuthToken
 end cse_GetConsoleAuthToken
 
 command cse_SetConsoleAuthToken oAuthToken
-   secret_Set "cseConsoleAuthToken", "cse", oAuthToken
+   secret_Set "cseConsoleAuthToken", oAuthToken, "cse"
    put the result into modelDataFile
    return modelDataFile
 end cse_SetConsoleAuthToken
@@ -238,7 +265,7 @@ function cse_GetConsoleRefreshToken
 end cse_GetConsoleRefreshToken
 
 command cse_SetConsoleRefreshToken refreshToken
-   secret_Set "cseConsoleRefreshToken", "cse", refreshToken
+   secret_Set "cseConsoleRefreshToken", refreshToken, "cse"
    put the result into modelDataFile
    return modelDataFile
 end cse_SetConsoleRefreshToken
@@ -249,7 +276,7 @@ function cse_GetConsoleClientSecret
 end cse_GetConsoleClientSecret
 
 command cse_SetConsoleClientSecret clientSecret
-   secret_Set "cseConsoleClientSecret", "cse", clientSecret
+   secret_Set "cseConsoleClientSecret", clientSecret, "cse"
    put the result into modelDataFile
    return modelDataFile
 end cse_SetConsoleClientSecret

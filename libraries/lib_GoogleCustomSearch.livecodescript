@@ -9,24 +9,6 @@ version: 0.3
 /*
 This library is for interfacing t=with the Google Custom Search (CSE) REST API.
 We also have handlers for creating and manipulating XML sitemaps.
-
-on test
-   -- put cse_SearchAndConstructPageArray ("wiki") into someArray
-   -- display_Array someArray
-   
-   put cse_SearchAndConstructPageArray ("cave", "1234", "1", "Writing") into pageArray
-   -- fedwiki_ReturnPageArray pageArray
-   
-   put json_FromArray (pageArray) into someJSON
-   replace "\u0022" with quote in someJSON
-   fedwiki_ReturnJSON someJSON
-   
-   put "We&#39;ve made the federation more visible to strangers by crawling it and publishing what we find. A batch of student sites not yet claimed are subject to unwanted&nbsp;..." into someHtml
-   put fedwiki_HtmlToMarkdown (someHtml) into someMarkdown
-   
-   put fedwiki_ConstructErrorJSON (someMarkdown) into someJSON
-   fedwiki_ReturnJSON someJSON
-end test
 */
 
 
@@ -65,7 +47,7 @@ function cse_GetAuthToken
 end cse_GetAuthToken
 
 command cse_SetAuthToken oAuthToken
-   secret_Set "cseAuthToken", "cse", oAuthToken
+   secret_Set "cseAuthToken", oAuthToken, "cse"
    put the result into modelDataFile
    return modelDataFile
 end cse_SetAuthToken
@@ -209,25 +191,25 @@ function cse_SearchAndConstructPageArray googleQuery, pWord, pStartNum, pCseName
       --
       put fedwiki_ConstructSlug (refTitle) into refSlug
       put fedwiki_HtmlToMarkdown (htmlSnippet) into refText
-      fedwiki_AddRefToPageArray pageArray, refSlug, refDomain, refText, refTitle
+      pageArray_AddReference pageArray, refSlug, refDomain, refText, refTitle
    end repeat
    --
    -- now add footer
-   fedwiki_AddPagefoldToPageArray pageArray, "."
+   pageArray_AddPagefold pageArray, "."
    put cse_ConstructGreenForm (googleQuery, pCseName, nextOffsetNum, pWord, totalResults, searchTime) into someHTML
-   fedwiki_AddHtmlToPageArray pageArray, someHTML
+   pageArray_AddHtml pageArray, someHTML
    --
-   fedwiki_StripJournalToCreate pageArray
+   pageArray_StripJournal pageArray
    return pageArray
 end cse_SearchAndConstructPageArray
 
 function cse_ConstructPageArrayTop pageTitle, googleQuery, cseName, nextOffsetNum, pWord, totalResults, searchTime, maxNum, nextStartIndex, itemsArray
    switch
       case totalResults = 0
-         put fedwiki_ConstructPageArray ("No result found.", "Search for something a bit more interesting...") into pageArray
+         put pageArray_Construct ("No result found.", "Search for something a bit more interesting...") into pageArray
          return pageArray
       case itemsArray is not an array
-         put fedwiki_ConstructPageArray ("Daily limit exceeded", "We should provide another search engine here...") into pageArray
+         put pageArray_Construct ("Daily limit exceeded", "We should provide another search engine here...") into pageArray
          return pageArray
       case nextStartIndex is empty
          -- no more found after this
@@ -241,7 +223,7 @@ function cse_ConstructPageArrayTop pageTitle, googleQuery, cseName, nextOffsetNu
    put fedwiki_CreateHtmlPageArray (pageTitle, someHTML) into pageArray
    --
    put maxNum && "results" into foldText
-   fedwiki_AddPagefoldToPageArray pageArray, foldText
+   pageArray_AddPagefold pageArray, foldText
    --
    return pageArray
 end cse_ConstructPageArrayTop

@@ -11,32 +11,40 @@ deps: lib_Fedwiki
 /*
 A library for XML and XML related data structures.
 
-function fortyFoxes_YoutubeUploadsPlayListID
-   return "UU7OedLDWblLWl_UDm5JJDQg"
-   -- put fortyFoxes_YoutubeChannelID() into channelID
-   -- put youtube_FetchChannelUploadsPlayListID (channelID) into uploadsPlaylistID
-   -- return uploadsPlaylistID
-end fortyFoxes_YoutubeUploadsPlayListID
+command youTube_SetServerApiKey apiKey
+   secret_Set "YoutubeServerApiKey", apiKey, "youtube"
+   put the result into modelDataFile
+   return modelDataFile
+end youTube_SetServerApiKey
 
-function fortyFoxes_YoutubeChannelID
-   return "UC7OedLDWblLWl_UDm5JJDQg"
-   -- return youtube_FetchUserChannelID ("fortyfoxes")
-end fortyFoxes_YoutubeChannelID
+function youTube_GetDesktopApiKey
+   put secret_Get ("YoutubeDesktopApiKey", "youtube") into apiKey
+   return apiKey
+end youTube_GetDesktopApiKey
+
+command youTube_SetDesktopApiKey apiKey
+   secret_Set "YoutubeDesktopApiKey", apiKey, "youtube"
+   put the result into modelDataFile
+   return modelDataFile
+end youTube_SetDesktopApiKey
+
+switch the environment
+   case "server"
+      return youTube_GetServerApiKey()
+   default
+      return youTube_GetDesktopApiKey()
+end switch
+
+function youTube_GetServerApiKey
+   put secret_Get ("YoutubeServerApiKey", "youtube") into apiKey
+   return apiKey
+end youTube_GetServerApiKey
 */
 
 
 --> Variables
 -
-constant cYoutubeModelShortFile = "youtube_Authentication.array"
 constant cYoutubeApiStem = "https://www.googleapis.com/youtube/v3/"
-
-local YoutubeServerApiKey
-local YoutubeDesktopApiKey
-
-constant cVimeoModelShortFile = "vimeo_Authentication.array"
-local VimeoApiKey
-local VimeoClientID
-local VimeoClientSecret
 
 
 --> TED
@@ -51,129 +59,33 @@ function ted_ConstructPageArray tedID
    --
    put articleTitle & "." && pageDescription into videoDescription
    --
-   put fedwiki_ConstructPageArray (articleTitle, shortDescription) into fedwikiPageArray
-   fedwiki_AddVideoToPageArray fedwikiPageArray, tedID, "TED", videoDescription
+   put pageArray_Construct (articleTitle, shortDescription) into fedwikiPageArray
+   pageArray_AddVideo fedwikiPageArray, tedID, "TED", videoDescription
    --
-   fedwiki_StripJournalToCreate fedwikiPageArray
+   pageArray_StripJournal fedwikiPageArray
    return fedwikiPageArray
 end ted_ConstructPageArray
 
-
---> Vimeo
--
-function vimeo_ConstructPageArray vimeoID
-   put vimeo_FetchVideoJSON (vimeoID) into someJSON
-   put json_ToArray (someJSON) into vimeoArray
-   --
-   put vimeoArray ["name"] into vimeoTitle
-   put vimeoArray ["description"] into vimeoDescription
-   put vimeoArray ["link"] into vimeoURL
-   --
-   put vimeoTitle & "." && vimeoDescription into videoDescription
-   --
-   put fedwiki_ConstructPageArray (vimeoTitle, vimeoDescription) into fedwikiPageArray
-   fedwiki_AddVideoToPageArray fedwikiPageArray, vimeoID, "VIMEO", videoDescription
-   --
-   return fedwikiPageArray
-end vimeo_ConstructPageArray
-
-function vimeo_FetchVideoJSON videoID
-   put "videos/" & videoID into apiBit
-   put vimeo_RestGET (apiBit) into someJSON
+private function _FetchYoutubeJSON apiBit
+   put cYoutubeApiStem & apiBit into someUrl
+   put "&key=" & youTube_GetApiKey() after someUrl
+   put url someUrl into someJSON
    return someJSON
-end vimeo_FetchVideoJSON
+end _FetchYoutubeJSON
 
 
---> Vimeo | Authentication
+--> Youtube | Authentication
 -
-function vimeo_GetUnauthenticatedToken
-   -- not working
-   -- https://developer.vimeo.com/api/authentication
-   put vimeo_GetClientID() into clientID
-   put vimeo_GetSecret() into clientSecret
-   put base64encode (clientID & ":" & clientSecret) into encodedBit
-   replace CR with empty in encodedBit
-   --
-   put "Authorization : basic" && encodedBit after authHeader
-   --
-   set the httpheaders to authHeader
-   -- 
-   get libURLFormData ("grant_type", "client_credentials", "scope", "public private")
-   post it to url "https://api.vimeo.com/oauth/authorize/client"
-   put it into postResult
-   return postResult
-end vimeo_GetUnauthenticatedToken
+function youtube_GetApiKey
+   put secret_Get ("YoutubeApiKey", "youtube") into apiKey
+   return apiKey
+end youtube_GetApiKey
 
-command vimeo_SetAccessToken accessToken
-   user_SetValue "VimeoApiKey", cVimeoModelShortFile, accessToken
+command youtube_SetApiKey apiKey
+   secret_Set "YoutubeApiKey", apiKey, "youtube"
    put the result into modelDataFile
    return modelDataFile
-end vimeo_SetAccessToken
-
-function vimeo_GetAccessToken
-   if VimeoApiKey is empty then
-      if the environment = "server" then
-         put rigFetchConfigItem ("VimeoApiKey") into VimeoApiKey
-      else
-         put user_GetValue ("VimeoApiKey", cVimeoModelShortFile) into VimeoApiKey
-      end if
-   end if
-   return VimeoApiKey
-end vimeo_GetAccessToken
-
-function vimeo_GetClientID
-   if VimeoClientID is empty then
-      if the environment = "server" then
-         put rigFetchConfigItem ("VimeoClientID") into VimeoClientID
-      else
-         put user_GetValue ("VimeoClientID", cVimeoModelShortFile) into VimeoClientID
-      end if
-   end if
-   return VimeoClientID
-end vimeo_GetClientID
-
-command vimeo_SetClientID clientID
-   user_SetValue "VimeoClientID", cVimeoModelShortFile, clientID
-   put the result into modelDataFile
-   return modelDataFile
-end vimeo_SetClientID
-
-function vimeo_GetSecret
-   if VimeoClientSecret is empty then
-      if the environment = "server" then
-         put rigFetchConfigItem ("VimeoClientSecret") into VimeoClientSecret
-      else
-         put user_GetValue ("VimeoClientSecret", cVimeoModelShortFile) into VimeoClientSecret
-      end if
-   end if
-   return VimeoClientSecret
-end vimeo_GetSecret
-
-command vimeo_SetClientSecret clientSecret
-   user_SetValue "VimeoClientSecret", cVimeoModelShortFile, clientSecret
-   put the result into modelDataFile
-   return modelDataFile
-end vimeo_SetClientSecret
-
-
---> Vimeo | REST
--
-function vimeo_RestGET apiBit
-   vimeo_SetAuthentication
-   put "https://api.vimeo.com/" & apiBit into restURL
-   --
-   put url restURL into someJSON
-   return someJSON
-end vimeo_RestGET
-
-command vimeo_SetAuthentication
-   put "Accept: application/vnd.vimeo.*+json;version=3.4" into authHeader
-   --
-   put vimeo_GetAccessToken() into accessToken
-   put CR & "Authorization: Bearer" && accessToken after authHeader
-   --
-   set the httpheaders to authHeader
-end vimeo_SetAuthentication
+end youtube_SetApiKey
 
 
 --> Youtube | REST
@@ -182,46 +94,6 @@ function youtube_ConstructWatchUrl videoID
    put "https://www.youtube.com/watch?v=" & videoID into youtubeURL
    return youtubeURL
 end youtube_ConstructWatchUrl
-
-
---> Youtube | Authentication
--
-function youTube_GetApiKey
-   switch the environment
-      case "server"
-         return youTube_GetServerApiKey()
-      default
-         return youTube_GetDesktopApiKey()
-   end switch
-end youTube_GetApiKey
-
-function youTube_GetServerApiKey
-   if YoutubeDesktopApiKey is empty then
-      -- put user_GetValue ("YoutubeServerApiKey", cYoutubeModelShortFile) into YoutubeServerApiKey
-      put rigFetchConfigItem ("YoutubeApiKey") into YoutubeServerApiKey
-   end if
-   return YoutubeServerApiKey
-end youTube_GetServerApiKey
-
--- command youTube_SetServerApiKey pApiKey
--- need to set manually in config.lc file on server
-user_SetValue "YoutubeServerApiKey", cYoutubeModelShortFile, pApiKey
-put the result into modelDataFile
-return modelDataFile
-end youTube_SetServerApiKey
-
-function youTube_GetDesktopApiKey
-   if YoutubeDesktopApiKey is empty then
-      put user_GetValue ("YoutubeDesktopApiKey", cYoutubeModelShortFile) into YoutubeDesktopApiKey
-   end if
-   return YoutubeDesktopApiKey
-end youTube_GetDesktopApiKey
-
-command youTube_SetDesktopApiKey pApiKey
-   user_SetValue "YoutubeDesktopApiKey", cYoutubeModelShortFile, pApiKey
-   put the result into modelDataFile
-   return modelDataFile
-end youTube_SetDesktopApiKey
 
 
 --> Youtube | Playlist | Index
@@ -587,12 +459,6 @@ end youtube_FetchSearchJson
 
 --> Private
 -
-private function _FetchYoutubeJSON apiBit
-   put construct_YoutubeRestUrl (apiBit) into someUrl
-   put url someUrl into someJSON
-   return someJSON
-end _FetchYoutubeJSON
-
 private command set_PlayListPageTitle @pageTitle, playlistID
    if pageTitle is empty then
       put youtube_FetchPlayListInfoArray (playlistID) into infoArray
@@ -608,7 +474,7 @@ private function convert_SnippetToThumbPageArray snippetArray, pVideoID, pPageTi
    
    if pPageTitle is empty then put videoTitle into pPageTitle
    put pPageTitle into pageArray ["title"]
-   put fedwiki_ConstructJournalArray (pageTitle, pSourceArray) into pageArray ["journal"]  -- strip journal to minimum
+   put pageArray_ConstructJournal (pageTitle, pSourceArray) into pageArray ["journal"]  -- strip journal to minimum
    return pageArray
 end convert_SnippetToThumbPageArray
 
@@ -619,15 +485,9 @@ private function convert_SnippetToPageArray snippetArray, pVideoID, pPageTitle, 
    
    if pPageTitle is empty then put videoTitle into pPageTitle
    put pPageTitle into pageArray ["title"]
-   put fedwiki_ConstructJournalArray (pageTitle, pSourceArray) into pageArray ["journal"]  -- strip journal to minimum
+   put pageArray_ConstructJournal (pageTitle, pSourceArray) into pageArray ["journal"]  -- strip journal to minimum
    return pageArray
 end convert_SnippetToPageArray
-
-private function construct_YoutubeRestUrl apiBit
-   put cYoutubeApiStem & apiBit into someUrl
-   put "&key=" & youTube_GetApiKey() after someUrl
-   return someUrl
-end construct_YoutubeRestUrl
 
 private command deconstruct_PlayListInfoArray infoArray, @playListTitle, @thumbnailURL, @playListDescription
    put infoArray ["items"][1]["snippet"] into snippetArray
@@ -650,16 +510,16 @@ private function construct_VideoIndexPageArray orderedSnippetArray, pageTitle, p
    put space & "And then drag the sacrifical lamb to your new page." after someHelp
    put CR & CR after someHelp
    put "Once you have created you page, drag and drop the stand-alone link at the bottom of the page onto the transporter." after someHelp
-   fedwiki_AddParagraphToPageArray pageArray, someHelp
+   pageArray_AddText pageArray, someHelp
    --
    put "Here is and index of videos from the playlist" && quote & pageTitle & quote & ":" into firstParagraph
-   fedwiki_AddParagraphToPageArray pageArray, firstParagraph
+   pageArray_AddText pageArray, firstParagraph
    --
    construct_HtmlIndexArrays orderedSnippetArray, htmlIndex, lookupArray, pDirection, pNumbered
-   fedwiki_AddHtmlToPageArray pageArray, htmlIndex
+   pageArray_AddHtml pageArray, htmlIndex
    
    -- construct_MarkdownArrays orderedSnippetArray, markdownLinkIndex, lookupArray, pDirection
-   -- fedwiki_AddMarkdownToPageArray pageArray, markdownLinkIndex
+   -- pageArray_AddMarkdown pageArray, markdownLinkIndex
    
    -- construct sourceArray
    put "https://livecode.world/youtube/transportAgain" into transportURL
@@ -668,7 +528,7 @@ private function construct_VideoIndexPageArray orderedSnippetArray, pageTitle, p
    put fedwiki_ConstructCreateSourceArray (transportURL, pDroppedURL, dateTransported, repoURL) into sourceArray
    put lookUpArray into sourceArray ["link_dictionary"]
    
-   put fedwiki_ConstructJournalArray (pageTitle, sourceArray) into pageArray ["journal"]  -- strip journal to minimum
+   put pageArray_ConstructJournal (pageTitle, sourceArray) into pageArray ["journal"]  -- strip journal to minimum
    return pageArray
 end construct_VideoIndexPageArray
 
@@ -761,7 +621,7 @@ private function construct_AllVideoPageArray orderedSnippetArray, pageTitle, pNe
       end if
       put the result into videoTitle
    end repeat
-   put fedwiki_ConstructJournalArray (pageTitle, pSourceArray) into pageArray ["journal"]  -- strip journal to minimum
+   put pageArray_ConstructJournal (pageTitle, pSourceArray) into pageArray ["journal"]  -- strip journal to minimum
    return pageArray
 end construct_AllVideoPageArray
 
@@ -777,10 +637,8 @@ private command add_SnippetToThumbPageArray @pageArray, snippetArray, pVideoID
    
    put fedwiki_ConstructLink (videoTitle) & ". Broadcast on" && publishedAt & "." into videoCaption 
    put fedwiki_ConstructImageHtml (thumbNailURL, videoCaption, youtubeURL, "- youtube", thumbNailWidth) into imageHTML 
-   fedwiki_AddHtmlToPageArray pageArray, imageHTML
+   pageArray_AddHtml pageArray, imageHTML
    
-   -- put fedwiki_ConstructEncodedImageArray (someImage, imageType, plainCaption) into imageArray
-   -- fedwiki_AddItemArrayToStoryEnd imageArray, pageArray
    return videoTitle
 end add_SnippetToThumbPageArray
 
@@ -791,12 +649,12 @@ private command add_SnippetToPageArray @pageArray, snippetArray, pVideoID, pDont
    if pVideoID is not empty then put pVideoID into videoID
    put word 1 to 3 of item 2 of publishedAt into publishedAt  -- from internet date
    
-   if pDontAddSnippetTitle is not true then fedwiki_AddMarkdownToPageArray pageArray, ("#" && videoTitle)
+   if pDontAddSnippetTitle is not true then pageArray_AddMarkdown pageArray, ("#" && videoTitle)
    if videoDescription is not empty then
       put word 1 to -1 of videoDescription into videoDescription
       put line 1 of videoDescription into firstParagraph
       put line 2 to -1 of videoDescription into lastParagraphs
-      fedwiki_AddParagraphToPageArray pageArray, firstParagraph
+      pageArray_AddText pageArray, firstParagraph
    end if
    
    if pDontLinkTitle is true then
@@ -804,11 +662,11 @@ private command add_SnippetToPageArray @pageArray, snippetArray, pVideoID, pDont
    else
       put fedwiki_ConstructLink (videoTitle) & ". Broadcast on" && publishedAt & "." into videoCaption 
    end if
-   fedwiki_AddVideoToPageArray pageArray, videoID, "YOUTUBE", videoCaption
+   pageArray_AddVideo pageArray, videoID, "YOUTUBE", videoCaption
    
    if lastParagraphs is not empty then
       -- could split into individual paragraphs
-      fedwiki_AddParagraphToPageArray pageArray, lastParagraphs
+      pageArray_AddText pageArray, lastParagraphs
    end if
    
    repeat for each key tagNum in tagArray
@@ -817,8 +675,8 @@ private command add_SnippetToPageArray @pageArray, snippetArray, pVideoID, pDont
    end repeat
    delete char -2 to -1 of tagList
    if tagList is not empty then
-      fedwiki_AddMarkdownToPageArray pageArray, "# Tags"
-      fedwiki_AddParagraphToPageArray pageArray, tagList
+      pageArray_AddMarkdown pageArray, "# Tags"
+      pageArray_AddText pageArray, tagList
    end if
    return videoTitle
 end add_SnippetToPageArray

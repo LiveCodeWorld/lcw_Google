@@ -20,6 +20,16 @@ on menu_DisplayAll indexView
    set the displayed_Index ["All Domains"] of indexView to domainNames
 end menu_DisplayAll
 
+on menu_DisplayMissingDomains indexView
+   put cse_FetchMissingDomains() into domainNames
+   set the displayed_Index ["Missing Domains"] of indexView to domainNames
+end menu_DisplayMissingDomains
+
+on menu_DisplayMissingSitemaps indexView
+   put cse_FetchMissingSitemaps() into domainNames
+   set the displayed_Index ["Missing Sitemaps"] of indexView to domainNames
+end menu_DisplayMissingSitemaps
+
 on _
 end _
 
@@ -66,7 +76,7 @@ end mDoubleUp_ConsoleDomain
 -
 command _ConstructMissingArray @goodArray, @missingArray, @checkSiteMapArray
    set the cursor to watch
-   put atopia_FetchAllFolderList() into atopiaDomains
+   put atopia_FetchFolders() into atopiaDomains
    put url_ConstructTopLevelDomainArray (atopiaDomains) into atopiaDomainNameArray
    --
    put cse_FetchConsoleDomains() into consoleDomainNames
