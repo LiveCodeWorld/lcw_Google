@@ -30,7 +30,7 @@ function cse_FetchMissingDomains pFetchLive
    if pFetchLive is true then
       put atopia_FetchFolders() into wikiDomains
    else
-      put atopia_FetchRoster() into wikiDomains
+      put atopia_FetchRosterDomains() into wikiDomains
    end if
    line_DeleteIndex wikiDomains, consoleDomains
    url_SortDomainIndex wikiDomains
@@ -49,7 +49,7 @@ end cse_AddTopDomain
 --> CSE | Console | Sitemap
 -
 command cse_AddSubDomainSitemaps topDomain
-   put atopia_FetchRoster (topDomain) into wikiDomains
+   put atopia_FetchRosterDomains (topDomain) into wikiDomains
    cse_AddDomainSitemaps wikiDomains
    return the result
 end cse_AddSubDomainSitemaps
@@ -119,7 +119,7 @@ end cse_FetchSitemapsArray
 --> CSE | Console | Site
 -
 command cse_AddAllSubDomains topDomain
-   put atopia_FetchRoster (topDomain) into wikiDomains
+   put atopia_FetchRosterDomains (topDomain) into wikiDomains
    cse_AddDomains wikiDomains
    return the result
 end cse_AddAllSubDomains
@@ -314,6 +314,17 @@ function cse_ConsoleRestGET restURL
    put url restURL into someJSON
    return someJSON
 end cse_ConsoleRestGET
+
+
+--> Deps
+-
+function secret_Get secretName
+   -- for server use only
+   if the environment is not "server" then pass "secret_Get"
+   --
+   put rigFetchConfigItem (secretName) into someSecret
+   return someSecret
+end secret_Get
 
 
 --> Private

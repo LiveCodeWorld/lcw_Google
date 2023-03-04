@@ -34,8 +34,8 @@ function google_ConstructFedwikiImagePageArray googleURL
    put "The search query for this image was" && kwote (searchTerms) into someText
    put ". Try another search on [" & searchURL && "google]" after someText
    --
-   put fedwiki_ConstructNewPageArray ("Google found this image", someText) into fedwikiPageArray
-   fedwiki_AddImageToPageArray fedwikiPageArray, imageURL, someCaption, refURL
+   put pageArray_Construct ("Google found this image", someText) into fedwikiPageArray
+   pageArray_AddImage fedwikiPageArray, imageURL, someCaption, refURL
    --
    return fedwikiPageArray
 end google_ConstructFedwikiImagePageArray
