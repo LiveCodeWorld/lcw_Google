@@ -191,7 +191,7 @@ function cse_SearchAndConstructPageArray googleQuery, pWord, pStartNum, pCseName
       --
       put fedwiki_ConstructSlug (refTitle) into refSlug
       put fedwiki_HtmlToMarkdown (htmlSnippet) into refText
-      pageArray_AddReference pageArray, refSlug, refDomain, refText, refTitle
+      pageArray_AddReference pageArray, refTitle, refDomain, refText, refSlug
    end repeat
    --
    -- now add footer
