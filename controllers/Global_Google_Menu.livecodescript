@@ -28,6 +28,10 @@ end menu_DisplayConsoleDomains
 on _
 end _
 
+on menu_Authenticate
+   cse_SetConsoleAuth
+end menu_Authenticate
+
 on menu_TestSheet
    ## from David's share link (published)
    -- does not work (its HTML)
@@ -66,11 +70,3 @@ on menu_TestCsv
    put url someURL into someTSV
    put someTSV
 end menu_TestCsv
-
-
-
---> Global | Google | Menu | Props
--
-
---> Global | Google | Menu | Disabled
--

@@ -108,7 +108,7 @@ end cse_NameToID
 function cse_ConstructGreenForm googleQuery, lastCseName, nextOffsetNum, pWord, totalResults, searchTime, pColour
    if pColour is empty then put "lightgreen" into pColour
    put merge ("<div style='background-color:[[pColour]];color:black;padding:12px;'>") into someForm
-   put CR & "<form action='https://rest.livecode.world/search/cse'>" after someForm
+   put CR & "<form action='http://rest.livecode.world/search/cse'>" after someForm
    --
    cse_AddDataList someForm, lastCseName
    --
@@ -122,7 +122,7 @@ function cse_ConstructGreenForm googleQuery, lastCseName, nextOffsetNum, pWord, 
 end cse_ConstructGreenForm
 
 function cse_ConstructSimpleHeader googleQuery, lastCseName, nextOffsetNum, pWord, totalResults, searchTime
-   put "<form action='https://rest.livecode.world/search/cse'>" into someForm
+   put "<form action='http://rest.livecode.world/search/cse'>" into someForm
    put CR & merge ("Found in [[totalResults]] results ([[searchTime]] seconds)&nbsp;") after someForm
    --
    put CR & merge ("<input name='cse_Name' value='[[lastCseName]]' type='hidden'>") after someForm
@@ -136,7 +136,7 @@ function cse_ConstructSimpleHeader googleQuery, lastCseName, nextOffsetNum, pWor
 end cse_ConstructSimpleHeader
 
 function cse_ConstructResultHeader googleQuery, lastCseName, nextOffsetNum, pWord, totalResults, searchTime
-   put "<form action='https://rest.livecode.world/search/cse'>" into someForm
+   put "<form action='http://rest.livecode.world/search/cse'>" into someForm
    put CR & merge ("Found in [[totalResults]] results ([[searchTime]] seconds)<p>") after someForm
    put CR & merge ("<input name='search_Term' value='[[googleQuery]]'>") after someForm
    put CR & "using" after someForm

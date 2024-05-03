@@ -193,6 +193,10 @@ end cse_FetchConsoleSites
 
 --> Google | CSE | Auth
 -
+command launch_ConsoleAdmin
+   launch url "https://console.cloud.google.com/apis/credentials/oauthclient/775766849861-n4b8s167mc0juhpjja9cn8rnjio78o4d.apps.googleusercontent.com?authuser=1&project=hybrid-bastion-230818"
+end launch_ConsoleAdmin
+
 command cse_SetConsoleAuth
    /*
    App = "Search Console"
